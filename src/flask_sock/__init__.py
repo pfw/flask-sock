@@ -1,6 +1,6 @@
 from functools import wraps
 from flask import Blueprint, request
-from simple_websocket import Server, ConnectionClosed
+from simple_websocket import Server, ConnectionClosed, Pinger
 
 
 class Sock:
@@ -29,6 +29,8 @@ class Sock:
         if self.app is None:
             app.register_blueprint(self.bp)
 
+        self.pinger = Pinger(interval=10)
+
     def route(self, path, **kwargs):
         """Decorator to create a WebSocket route.
 
@@ -54,6 +56,8 @@ class Sock:
             @wraps(f)
             def websocket_route(*args, **kwargs):  # pragma: no cover
                 ws = Server(request.environ)
+                self.pinger.register(ws)
+
                 try:
                     f(ws, *args, **kwargs)
                 except ConnectionClosed:
